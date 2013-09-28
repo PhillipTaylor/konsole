@@ -620,6 +620,7 @@ void SessionController::setupCommonActions()
     action = collection->addAction("create-scroll-mark", this, SLOT(createScrollMark()));
     action->setText(i18n("Create Mark"));
     action->setIcon(KIcon("edit-clear-history")); //TODO: FIX
+    connect(_session, SIGNAL(scrollMarkRequest(void)), this, SLOT(createScrollMark()));
 
     action = collection->addAction("clear-scroll-marks", this, SLOT(clearScrollMarks()));
     action->setText(i18n("Clear Marks"));
@@ -1432,6 +1433,7 @@ void SessionController::clearHistory()
 {
     _session->clearHistory();
     _view->updateImage();   // To reset view scrollbar
+    clearScrollMarks();
 }
 
 void SessionController::clearHistoryAndReset()
@@ -1444,6 +1446,7 @@ void SessionController::clearHistoryAndReset()
     _session->refresh();
     _session->setCodec(QTextCodec::codecForName(name));
     clearHistory();
+    clearScrollMarks();
 }
 
 void SessionController::increaseFontSize()

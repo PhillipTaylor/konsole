@@ -660,6 +660,11 @@ void Session::activityStateSet(int state)
         }
     }
 
+    if (state == NOTIFYMARK) {
+        emit scrollMarkRequest();
+        state = NOTIFYNORMAL;
+    }
+
     if (state == NOTIFYACTIVITY && !_monitorActivity)
         state = NOTIFYNORMAL;
     if (state == NOTIFYSILENCE && !_monitorSilence)

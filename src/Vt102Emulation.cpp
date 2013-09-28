@@ -460,7 +460,8 @@ void Vt102Emulation::processToken(int token, int p, int q)
     case TY_CTL('C'      ) : /* ETX: ignored                      */ break;
     case TY_CTL('D'      ) : /* EOT: ignored                      */ break;
     case TY_CTL('E'      ) :      reportAnswerBack     (          ); break; //VT100
-    case TY_CTL('F'      ) : /* ACK: ignored                      */ break;
+    case TY_CTL('F'      ) : emit stateSet(NOTIFYMARK);
+                                break; //KDE Konsole specific
     case TY_CTL('G'      ) : emit stateSet(NOTIFYBELL);
                                 break; //VT100
     case TY_CTL('H'      ) : _currentScreen->backspace            (          ); break; //VT100
