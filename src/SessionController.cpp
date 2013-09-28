@@ -619,7 +619,7 @@ void SessionController::setupCommonActions()
     // The Scroll Marks feature
     action = collection->addAction("create-scroll-mark", this, SLOT(createScrollMark()));
     action->setText(i18n("Create Mark"));
-    action->setIcon(KIcon("edit-bomb"));
+    action->setIcon(KIcon("bookmark-new"));
 
     //automatically add marks when ctrl chr 06 seen in output
     connect(_session, SIGNAL(scrollMarkRequest(void)), this, SLOT(createScrollMark()));
@@ -1602,10 +1602,7 @@ void SessionController::sessionStateChanged(int state)
 
 void SessionController::createScrollMark()
 {
-    int new_mark = _view->screenWindow()->currentLine();
-
-    if (!_scrollMarks.contains(new_mark))
-        _scrollMarks.insert(new_mark);
+    _scrollMarks.insert(_view->screenWindow()->currentLine());
 }
 
 void SessionController::clearScrollMarks()
