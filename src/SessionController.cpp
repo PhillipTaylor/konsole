@@ -619,20 +619,23 @@ void SessionController::setupCommonActions()
     // The Scroll Marks feature
     action = collection->addAction("create-scroll-mark", this, SLOT(createScrollMark()));
     action->setText(i18n("Create Mark"));
-    action->setIcon(KIcon("edit-clear-history")); //TODO: FIX
+    action->setIcon(KIcon("edit-bomb"));
+
+    //automatically add marks when ctrl chr 06 seen in output
     connect(_session, SIGNAL(scrollMarkRequest(void)), this, SLOT(createScrollMark()));
 
     action = collection->addAction("clear-scroll-marks", this, SLOT(clearScrollMarks()));
     action->setText(i18n("Clear Marks"));
-    action->setIcon(KIcon("edit-clear-history")); //TODO: FIX
 
     action = collection->addAction("prev-scroll-mark", this, SLOT(gotoPreviousScrollMark()));
     action->setText(i18n("Goto Previous Mark"));
-    action->setIcon(KIcon("edit-clear-history")); //TODO: FIX
+    action->setIcon(KIcon("go-up-search"));
+    action->setShortcut(QKeySequence(Qt::CTRL + Qt::Key_Up));
 
     action = collection->addAction("next-scroll-mark", this, SLOT(gotoNextScrollMark()));
     action->setText(i18n("Goto Next Mark"));
-    action->setIcon(KIcon("edit-clear-history")); //TODO: FIX
+    action->setIcon(KIcon("go-down-search"));
+    action->setShortcut(QKeySequence(Qt::CTRL + Qt::Key_Down));
 
     // Profile Options
     action = collection->addAction("edit-current-profile", this, SLOT(editCurrentProfile()));
@@ -1433,7 +1436,6 @@ void SessionController::clearHistory()
 {
     _session->clearHistory();
     _view->updateImage();   // To reset view scrollbar
-    clearScrollMarks();
 }
 
 void SessionController::clearHistoryAndReset()
