@@ -1621,8 +1621,8 @@ void SessionController::gotoPreviousScrollMark()
         int next = marks_iter.next();
         if (next >= line)
             break;
-        if (next > target)
-            target = next;
+
+        target = next;
     }
 
     _view->screenWindow()->scrollTo(target);
