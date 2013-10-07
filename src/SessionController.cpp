@@ -115,6 +115,7 @@ SessionController::SessionController(Session* session , TerminalDisplay* view, Q
     , _searchStartLine(0)
     , _prevSearchResultLine(0)
     , _searchBar(0)
+    , _currentScrollMark(0)
     , _codecAction(0)
     , _switchProfileMenu(0)
     , _webSearchMenu(0)
@@ -501,6 +502,12 @@ bool SessionController::eventFilter(QObject* watched , QEvent* event)
             _view->processFilters();
             _urlFilterUpdateRequired = false;
         }
+
+        if (!_scrollBarConnected && _view->screenWindow()) {
+            connect(_view->screenWindow(), SIGNAL(scrolled(int)), this, SLOT(updateCurrentScrollMark()));
+            _scrollBarConnected = true;
+        }
+
     }
 
     return false;
@@ -622,7 +629,7 @@ void SessionController::setupCommonActions()
     action->setIcon(KIcon("bookmark-new"));
 
     //automatically add marks when ctrl chr 06 seen in output
-    connect(_session, SIGNAL(scrollMarkRequest(void)), this, SLOT(createScrollMark()));
+    connect(_session, SIGNAL(scrollMarkRequest(void)), this, SLOT(createScrollMarkAtEnd()));
 
     action = collection->addAction("clear-scroll-marks", this, SLOT(clearScrollMarks()));
     action->setText(i18n("Clear Marks"));
@@ -1602,28 +1609,55 @@ void SessionController::sessionStateChanged(int state)
 
 void SessionController::createScrollMark()
 {
-    _scrollMarks.insert(_view->screenWindow()->currentLine());
+    int line = _view->screenWindow()->currentLine();
+
+    if (!_scrollMarks.contains(line))
+        _scrollMarks.append(line);
+}
+
+void SessionController::createScrollMarkAtEnd()
+{
+    int line = _view->screenWindow()->currentLine();
+    line += _view->screenWindow()->cursorPosition().y();
+
+    if (!_scrollMarks.contains(line))
+        _scrollMarks.append(line);
+
+    _currentScrollMark = line;
+}
+
+void SessionController::updateCurrentScrollMark()
+{
+    int new_pos = _view->screenWindow()->currentLine();
+    _currentScrollMark = new_pos;
 }
 
 void SessionController::clearScrollMarks()
 {
     _scrollMarks.clear();
+    _currentScrollMark = 0;
 }
 
 void SessionController::gotoPreviousScrollMark()
 {
-    int line = _view->screenWindow()->currentLine();
+
     int target = 0;
 
-    QSetIterator<int> marks_iter(_scrollMarks);
+    qSort(_scrollMarks.begin(), _scrollMarks.end());
+    QListIterator<int> marks_iter(_scrollMarks);
 
     while (marks_iter.hasNext()) {
         int next = marks_iter.next();
-        if (next >= line)
+        if (next >= _currentScrollMark)
             break;
 
         target = next;
     }
+
+    _currentScrollMark = target;
+
+    if (target >= _view->screenWindow()->currentLine())
+        target -= _view->screenWindow()->cursorPosition().y();
 
     _view->screenWindow()->scrollTo(target);
     _view->screenWindow()->setTrackOutput(false);
@@ -1632,18 +1666,22 @@ void SessionController::gotoPreviousScrollMark()
 
 void SessionController::gotoNextScrollMark()
 {
-    int line = _view->screenWindow()->currentLine();
     int target = _view->screenWindow()->lineCount();
 
-    QSetIterator<int> marks_iter(_scrollMarks);
+    qSort(_scrollMarks.begin(), _scrollMarks.end());
+    QListIterator<int> marks_iter(_scrollMarks);
 
     while (marks_iter.hasNext()) {
         int next = marks_iter.next();
-        if (next > line) {
+        if (next > _currentScrollMark) {
             target = next;
             break;
         }
     }
+
+    _currentScrollMark = target;
+    if (target > (_view->screenWindow()->lineCount() - _view->screenWindow()->cursorPosition().y()))
+        target -= _view->screenWindow()->cursorPosition().y();
 
     _view->screenWindow()->scrollTo(target);
     _view->screenWindow()->setTrackOutput(false);
