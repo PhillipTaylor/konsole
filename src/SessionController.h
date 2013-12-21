@@ -341,7 +341,8 @@ private:
 
     QList<int> _scrollMarks;
     int _currentScrollMark;
-	bool _scrollBarConnected;
+    bool _scrollBarConnected;
+    bool _inGotoMarkOperation;
 
     KCodecAction* _codecAction;
 

@@ -116,6 +116,7 @@ SessionController::SessionController(Session* session , TerminalDisplay* view, Q
     , _prevSearchResultLine(0)
     , _searchBar(0)
     , _currentScrollMark(0)
+    , _inGotoMarkOperation(false)
     , _codecAction(0)
     , _switchProfileMenu(0)
     , _webSearchMenu(0)
@@ -1443,6 +1444,7 @@ void SessionController::clearHistory()
 {
     _session->clearHistory();
     _view->updateImage();   // To reset view scrollbar
+    clearScrollMarks();
 }
 
 void SessionController::clearHistoryAndReset()
@@ -1455,7 +1457,6 @@ void SessionController::clearHistoryAndReset()
     _session->refresh();
     _session->setCodec(QTextCodec::codecForName(name));
     clearHistory();
-    clearScrollMarks();
 }
 
 void SessionController::increaseFontSize()
@@ -1628,8 +1629,10 @@ void SessionController::createScrollMarkAtEnd()
 
 void SessionController::updateCurrentScrollMark()
 {
-    int new_pos = _view->screenWindow()->currentLine();
-    _currentScrollMark = new_pos;
+    if (!_inGotoMarkOperation) {
+        int new_pos = _view->screenWindow()->currentLine();
+        _currentScrollMark = new_pos;
+    }
 }
 
 void SessionController::clearScrollMarks()
@@ -1641,6 +1644,7 @@ void SessionController::clearScrollMarks()
 void SessionController::gotoPreviousScrollMark()
 {
 
+    _inGotoMarkOperation = true;
     int target = 0;
 
     qSort(_scrollMarks.begin(), _scrollMarks.end());
@@ -1662,10 +1666,12 @@ void SessionController::gotoPreviousScrollMark()
     _view->screenWindow()->scrollTo(target);
     _view->screenWindow()->setTrackOutput(false);
     _view->screenWindow()->notifyOutputChanged();
+    _inGotoMarkOperation = false;
 }
 
 void SessionController::gotoNextScrollMark()
 {
+    _inGotoMarkOperation = true;
     int target = _view->screenWindow()->lineCount();
 
     qSort(_scrollMarks.begin(), _scrollMarks.end());
@@ -1686,6 +1692,7 @@ void SessionController::gotoNextScrollMark()
     _view->screenWindow()->scrollTo(target);
     _view->screenWindow()->setTrackOutput(false);
     _view->screenWindow()->notifyOutputChanged();
+    _inGotoMarkOperation = false;
 
 }
 
