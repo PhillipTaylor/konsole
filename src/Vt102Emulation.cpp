@@ -1017,7 +1017,7 @@ void Vt102Emulation::sendKeyEvent(QKeyEvent* event)
         if ( modifiers & Qt::MetaModifier && !(wantsMetaModifier || wantsAnyModifier)
              && !event->text().isEmpty() )
         {
-            textToSend.prepend("\030@s");
+            textToSend.prepend("\033");
         }
 
         if ( entry.command() != KeyboardTranslator::NoCommand )
