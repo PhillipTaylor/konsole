@@ -391,6 +391,8 @@ UrlFilter::HotSpot::UrlType UrlFilter::HotSpot::urlType() const
         return StandardUrl;
     else if (EmailAddressRegExp.exactMatch(url))
         return Email;
+    else if (JIRARegExp.exactMatch(url))
+        return Jira;
     else
         return Unknown;
 }
@@ -417,6 +419,12 @@ void UrlFilter::HotSpot::activate(QObject* object)
             }
         } else if (kind == Email) {
             url.prepend("mailto:");
+        } else if (kind == Jira) {
+            if (url.contains("WHM") || url.contains("DCA")) {
+                url.prepend("http://jira4.nap/browse/");
+            } else if (url.contains("DCOP")) {
+                url.prepend("http://jira.net-a-porter.com/jira/browse/");
+            }
         }
 
         new KRun(url, QApplication::activeWindow());
@@ -436,9 +444,11 @@ const QRegExp UrlFilter::FullUrlRegExp("(www\\.(?!\\.)|[a-z][a-z0-9+.-]*://)[^\\
 // [word chars, dots or dashes]@[word chars, dots or dashes].[word chars]
 const QRegExp UrlFilter::EmailAddressRegExp("\\b(\\w|\\.|-)+@(\\w|\\.|-)+\\.\\w+\\b");
 
+const QRegExp UrlFilter::JIRARegExp("WHM-[0-9]+|DCA-[0-9]+|DCOP-[0-9]+");
+
 // matches full url or email address
 const QRegExp UrlFilter::CompleteUrlRegExp('(' + FullUrlRegExp.pattern() + '|' +
-        EmailAddressRegExp.pattern() + ')');
+        EmailAddressRegExp.pattern() + JIRARegExp.pattern() + ')');
 
 UrlFilter::UrlFilter()
 {
@@ -458,11 +468,14 @@ QList<QAction*> UrlFilter::HotSpot::actions()
     QAction* copyAction = new QAction(_urlObject);
 
     const UrlType kind = urlType();
-    Q_ASSERT(kind == StandardUrl || kind == Email);
+    Q_ASSERT(kind == StandardUrl || kind == Email || kind == Jira);
 
     if (kind == StandardUrl) {
         openAction->setText(i18n("Open Link"));
         copyAction->setText(i18n("Copy Link Address"));
+    } else if (kind == Jira) {
+        openAction->setText(i18n("Open Ticket in Jira"));
+        copyAction->setText(i18n("Copy Ticket Address"));
     } else if (kind == Email) {
         openAction->setText(i18n("Send Email To..."));
         copyAction->setText(i18n("Copy Email Address"));

@@ -261,6 +261,7 @@ public:
         enum UrlType {
             StandardUrl,
             Email,
+            Jira,
             Unknown
         };
         UrlType urlType() const;
@@ -276,8 +277,9 @@ protected:
 private:
     static const QRegExp FullUrlRegExp;
     static const QRegExp EmailAddressRegExp;
+    static const QRegExp JIRARegExp;
 
-    // combined OR of FullUrlRegExp and EmailAddressRegExp
+    // combined OR of FullUrlRegExp and EmailAddressRegExp and JIRARegExp
     static const QRegExp CompleteUrlRegExp;
 };
 
