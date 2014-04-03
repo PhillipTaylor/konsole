@@ -420,11 +420,7 @@ void UrlFilter::HotSpot::activate(QObject* object)
         } else if (kind == Email) {
             url.prepend("mailto:");
         } else if (kind == Jira) {
-            if (url.contains("WHM") || url.contains("DCA")) {
-                url.prepend("http://jira4.nap/browse/");
-            } else if (url.contains("DCOP")) {
-                url.prepend("http://jira.net-a-porter.com/jira/browse/");
-            }
+            url.prepend("http://jira.net-a-porter.com/browse/");
         }
 
         new KRun(url, QApplication::activeWindow());
@@ -444,11 +440,13 @@ const QRegExp UrlFilter::FullUrlRegExp("(www\\.(?!\\.)|[a-z][a-z0-9+.-]*://)[^\\
 // [word chars, dots or dashes]@[word chars, dots or dashes].[word chars]
 const QRegExp UrlFilter::EmailAddressRegExp("\\b(\\w|\\.|-)+@(\\w|\\.|-)+\\.\\w+\\b");
 
-const QRegExp UrlFilter::JIRARegExp("WHM-[0-9]+|DCA-[0-9]+|DCOP-[0-9]+");
+// jira project link:
+//
+const QRegExp UrlFilter::JIRARegExp("WHM-[0-9]+|DCA-[0-9]+|DCOP-[0-9]+|whm-[0-9]+|dca-[0-9]+|dcop-[0-9]+");
 
 // matches full url or email address
 const QRegExp UrlFilter::CompleteUrlRegExp('(' + FullUrlRegExp.pattern() + '|' +
-        EmailAddressRegExp.pattern() + JIRARegExp.pattern() + ')');
+        EmailAddressRegExp.pattern() + '|' + JIRARegExp.pattern() + ')');
 
 UrlFilter::UrlFilter()
 {
