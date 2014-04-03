@@ -583,6 +583,9 @@ signals:
     /** Emitted when a bell event occurs in the session. */
     void bellRequest(const QString& message);
 
+    /** Emitted when a scroll mark event occurs in the session. */
+    void scrollMarkRequest(void);
+
     /**
      * Requests that the color the text for any tabs associated with
      * this session should be changed;

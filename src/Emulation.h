@@ -62,7 +62,13 @@ enum {
     NOTIFYACTIVITY = 2,
 
     // unused here?
-    NOTIFYSILENCE = 3
+    NOTIFYSILENCE = 3,
+    /**
+     * The terminal program has triggered a mark event
+     * requesting konsole should record the current line
+     * number for easier navigation.
+     */
+    NOTIFYMARK = 4
 };
 
 /**

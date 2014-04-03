@@ -29,6 +29,13 @@
             <Separator/>
             <DefineGroup name="session-view-operations"/>
         </Menu>
+        <Menu name="scroll-marks"><text>Mark</text>
+            <Action name="create-scroll-mark"/>
+            <Action name="clear-scroll-marks"/>
+            <Separator/>
+            <Action name="prev-scroll-mark"/>
+            <Action name="next-scroll-mark"/>
+        </Menu>
         <Action name="bookmark"/>
         <Menu name="settings"><text>Settings</text>
             <DefineGroup name="session-settings"/>

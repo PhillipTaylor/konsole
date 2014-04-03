@@ -36,6 +36,13 @@
             <Action name="clear-history" group="session-view-operations"/>
             <Action name="clear-history-and-reset" group="session-view-operations"/>
         </Menu>
+        <Menu name="scroll-marks">
+            <Action name="create-scroll-mark"/>
+            <Action name="clear-scroll-marks"/>
+            <Separator/>
+            <Action name="prev-scroll-mark"/>
+            <Action name="next-scroll-mark"/>
+        </Menu>
         <Menu name="settings">
             <Action name="edit-current-profile" group="session-settings"/>
             <Action name="switch-profile" group="session-settings"/>

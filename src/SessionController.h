@@ -239,6 +239,12 @@ private slots:
     void searchFrom();
     void findNextInHistory();
     void findPreviousInHistory();
+    void createScrollMark();
+    void createScrollMarkAtEnd();
+    void updateCurrentScrollMark();
+    void clearScrollMarks();
+    void gotoPreviousScrollMark();
+    void gotoNextScrollMark();
     void changeSearchMatch();
     void print_screen();
     void saveHistory();
@@ -333,6 +339,11 @@ private:
     int _searchStartLine;
     int _prevSearchResultLine;
     QPointer<IncrementalSearchBar> _searchBar;
+
+    QList<int> _scrollMarks;
+    int _currentScrollMark;
+    bool _scrollBarConnected;
+    bool _inGotoMarkOperation;
 
     KCodecAction* _codecAction;
 

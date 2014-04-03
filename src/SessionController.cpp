@@ -115,6 +115,8 @@ SessionController::SessionController(Session* session , TerminalDisplay* view, Q
     , _searchStartLine(0)
     , _prevSearchResultLine(0)
     , _searchBar(0)
+    , _currentScrollMark(0)
+    , _inGotoMarkOperation(false)
     , _codecAction(0)
     , _switchProfileMenu(0)
     , _webSearchMenu(0)
@@ -503,6 +505,12 @@ bool SessionController::eventFilter(QObject* watched , QEvent* event)
             _view->processFilters();
             _urlFilterUpdateRequired = false;
         }
+
+        if (!_scrollBarConnected && _view->screenWindow()) {
+            connect(_view->screenWindow(), SIGNAL(scrolled(int)), this, SLOT(updateCurrentScrollMark()));
+            _scrollBarConnected = true;
+        }
+
     }
 
     return false;
@@ -620,6 +628,27 @@ void SessionController::setupCommonActions()
     action->setText(i18n("Clear Scrollback and Reset"));
     action->setIcon(KIcon("edit-clear-history"));
     action->setShortcut(QKeySequence(Qt::CTRL + Qt::SHIFT + Qt::Key_K));
+
+    // The Scroll Marks feature
+    action = collection->addAction("create-scroll-mark", this, SLOT(createScrollMark()));
+    action->setText(i18n("Create Mark"));
+    action->setIcon(KIcon("bookmark-new"));
+
+    //automatically add marks when ctrl chr 06 seen in output
+    connect(_session, SIGNAL(scrollMarkRequest(void)), this, SLOT(createScrollMarkAtEnd()));
+
+    action = collection->addAction("clear-scroll-marks", this, SLOT(clearScrollMarks()));
+    action->setText(i18n("Clear Marks"));
+
+    action = collection->addAction("prev-scroll-mark", this, SLOT(gotoPreviousScrollMark()));
+    action->setText(i18n("Goto Previous Mark"));
+    action->setIcon(KIcon("go-up-search"));
+    action->setShortcut(QKeySequence(Qt::CTRL + Qt::Key_Up));
+
+    action = collection->addAction("next-scroll-mark", this, SLOT(gotoNextScrollMark()));
+    action->setText(i18n("Goto Next Mark"));
+    action->setIcon(KIcon("go-down-search"));
+    action->setShortcut(QKeySequence(Qt::CTRL + Qt::Key_Down));
 
     // Profile Options
     action = collection->addAction("edit-current-profile", this, SLOT(editCurrentProfile()));
@@ -1424,6 +1453,7 @@ void SessionController::clearHistory()
 {
     _session->clearHistory();
     _view->updateImage();   // To reset view scrollbar
+    clearScrollMarks();
 }
 
 void SessionController::clearHistoryAndReset()
@@ -1585,6 +1615,94 @@ void SessionController::sessionStateChanged(int state)
     }
 
     _previousState = state;
+}
+
+void SessionController::createScrollMark()
+{
+    int line = _view->screenWindow()->currentLine();
+
+    if (!_scrollMarks.contains(line))
+        _scrollMarks.append(line);
+}
+
+void SessionController::createScrollMarkAtEnd()
+{
+    int line = _view->screenWindow()->currentLine();
+    line += _view->screenWindow()->cursorPosition().y();
+
+    if (!_scrollMarks.contains(line))
+        _scrollMarks.append(line);
+
+    _currentScrollMark = line;
+}
+
+void SessionController::updateCurrentScrollMark()
+{
+    if (!_inGotoMarkOperation) {
+        int new_pos = _view->screenWindow()->currentLine();
+        _currentScrollMark = new_pos;
+    }
+}
+
+void SessionController::clearScrollMarks()
+{
+    _scrollMarks.clear();
+    _currentScrollMark = 0;
+}
+
+void SessionController::gotoPreviousScrollMark()
+{
+
+    _inGotoMarkOperation = true;
+    int target = 0;
+
+    qSort(_scrollMarks.begin(), _scrollMarks.end());
+    QListIterator<int> marks_iter(_scrollMarks);
+
+    while (marks_iter.hasNext()) {
+        int next = marks_iter.next();
+        if (next >= _currentScrollMark)
+            break;
+
+        target = next;
+    }
+
+    _currentScrollMark = target;
+
+    if (target >= _view->screenWindow()->currentLine())
+        target -= _view->screenWindow()->cursorPosition().y();
+
+    _view->screenWindow()->scrollTo(target);
+    _view->screenWindow()->setTrackOutput(false);
+    _view->screenWindow()->notifyOutputChanged();
+    _inGotoMarkOperation = false;
+}
+
+void SessionController::gotoNextScrollMark()
+{
+    _inGotoMarkOperation = true;
+    int target = _view->screenWindow()->lineCount();
+
+    qSort(_scrollMarks.begin(), _scrollMarks.end());
+    QListIterator<int> marks_iter(_scrollMarks);
+
+    while (marks_iter.hasNext()) {
+        int next = marks_iter.next();
+        if (next > _currentScrollMark) {
+            target = next;
+            break;
+        }
+    }
+
+    _currentScrollMark = target;
+    if (target > (_view->screenWindow()->lineCount() - _view->screenWindow()->cursorPosition().y()))
+        target -= _view->screenWindow()->cursorPosition().y();
+
+    _view->screenWindow()->scrollTo(target);
+    _view->screenWindow()->setTrackOutput(false);
+    _view->screenWindow()->notifyOutputChanged();
+    _inGotoMarkOperation = false;
+
 }
 
 void SessionController::zmodemDownload()
