@@ -1,3 +1,17 @@
+
+***
+
+This is not just a copy of the original source code on github. It has
+been heavily hacked with improvements that only work for me personally.
+
+Get the official KDE Konsole application here:
+https://projects.kde.org/projects/kde/applications/konsole/repository
+
+I have this official repo as a second 'git remote' so my code shouldn't
+drift too far out-of-sync, if you wish to copy one of my awesome features.
+
+***
+
 Konsole - KDE's Terminal Emulator
 ==================================
 
