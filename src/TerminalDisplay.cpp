@@ -327,7 +327,6 @@ TerminalDisplay::TerminalDisplay(QWidget* parent)
     , _hasTextBlinker(false)
     , _underlineLinks(true)
     , _openLinksByDirectClick(false)
-    , _isFixedSize(false)
     , _ctrlRequiredForDrag(true)
     , _tripleClickMode(Enum::SelectWholeLine)
     , _possibleTripleClick(false)
@@ -345,6 +344,7 @@ TerminalDisplay::TerminalDisplay(QWidget* parent)
     , _trimTrailingSpaces(false)
     , _margin(1)
     , _centerContents(false)
+    , _opacity(1.0)
 {
     // terminal applications are not designed with Right-To-Left in mind,
     // so the layout is forced to Left-To-Right
@@ -377,6 +377,7 @@ TerminalDisplay::TerminalDisplay(QWidget* parent)
     setMouseTracking(true);
 
     setUsesMouse(true);
+    setBracketedPasteMode(false);
 
     setColorTable(ColorScheme::defaultTable);
 
@@ -576,6 +577,7 @@ void TerminalDisplay::setOpacity(qreal opacity)
 {
     QColor color(_blendColor);
     color.setAlphaF(opacity);
+    _opacity = opacity;
 
     // enable automatic background filling to prevent the display
     // flickering if there is no transparency
@@ -613,11 +615,13 @@ void TerminalDisplay::drawBackground(QPainter& painter, const QRect& rect, const
     QRect contentsRect = contentsRegion.boundingRect();
 
     if (useOpacitySetting && !_wallpaper->isNull() &&
-            _wallpaper->draw(painter, contentsRect)) {
+            _wallpaper->draw(painter, contentsRect, _opacity)) {
     } else if (qAlpha(_blendColor) < 0xff && useOpacitySetting) {
+#if defined(Q_OS_MAC)
         // TODO - On MacOS, using CompositionMode doesn't work.  Altering the
-        //        transparency in the color scheme (appears to) alter the
-        //        brightness(?).  I'm not sure #ifdef is worthwhile ATM.
+        //        transparency in the color scheme alters the brightness.
+        painter.fillRect(contentsRect, backgroundColor);
+#else
         QColor color(backgroundColor);
         color.setAlpha(qAlpha(_blendColor));
 
@@ -625,6 +629,7 @@ void TerminalDisplay::drawBackground(QPainter& painter, const QRect& rect, const
         painter.setCompositionMode(QPainter::CompositionMode_Source);
         painter.fillRect(contentsRect, color);
         painter.restore();
+#endif
     } else {
         painter.fillRect(contentsRect, backgroundColor);
     }
@@ -1608,13 +1613,6 @@ void TerminalDisplay::resizeEvent(QResizeEvent*)
 
 void TerminalDisplay::propagateSize()
 {
-    if (_isFixedSize) {
-        setSize(_columns, _lines);
-        QWidget::setFixedSize(sizeHint());
-        parentWidget()->adjustSize();
-        parentWidget()->setFixedSize(parentWidget()->sizeHint());
-        return;
-    }
     if (_image)
         updateImageSize();
 }
@@ -1696,19 +1694,17 @@ void TerminalDisplay::calcGeometry()
         break;
     }
 
-    if (!_isFixedSize) {
-        // ensure that display is always at least one column wide
-        _columns = qMax(1, _contentRect.width() / _fontWidth);
-        _usedColumns = qMin(_usedColumns, _columns);
+    // ensure that display is always at least one column wide
+    _columns = qMax(1, _contentRect.width() / _fontWidth);
+    _usedColumns = qMin(_usedColumns, _columns);
 
-        // ensure that display is always at least one line high
-        _lines = qMax(1, _contentRect.height() / _fontHeight);
-        _usedLines = qMin(_usedLines, _lines);
+    // ensure that display is always at least one line high
+    _lines = qMax(1, _contentRect.height() / _fontHeight);
+    _usedLines = qMin(_usedLines, _lines);
 
-        if(_centerContents) {
-            QSize unusedPixels = _contentRect.size() - QSize(_columns * _fontWidth, _lines * _fontHeight);
-            _contentRect.adjust(unusedPixels.width() / 2, unusedPixels.height() / 2, 0, 0);
-        }
+    if(_centerContents) {
+        QSize unusedPixels = _contentRect.size() - QSize(_columns * _fontWidth, _lines * _fontHeight);
+        _contentRect.adjust(unusedPixels.width() / 2, unusedPixels.height() / 2, 0, 0);
     }
 }
 
@@ -1726,24 +1722,6 @@ void TerminalDisplay::setSize(int columns, int lines)
         _size = newSize;
         updateGeometry();
     }
-}
-
-void TerminalDisplay::setFixedSize(int cols, int lins)
-{
-    _isFixedSize = true;
-
-    //ensure that display is at least one line by one column in size
-    _columns = qMax(1, cols);
-    _lines = qMax(1, lins);
-    _usedColumns = qMin(_usedColumns, _columns);
-    _usedLines = qMin(_usedLines, _lines);
-
-    if (_image) {
-        delete[] _image;
-        makeImage();
-    }
-    setSize(cols, lins);
-    QWidget::setFixedSize(_size);
 }
 
 QSize TerminalDisplay::sizeHint() const
@@ -1912,7 +1890,7 @@ void TerminalDisplay::mousePressEvent(QMouseEvent* ev)
                 emit mouseSignal(0, charColumn + 1, charLine + 1 + _scrollBar->value() - _scrollBar->maximum() , 0);
             }
 
-            if (_underlineLinks && _openLinksByDirectClick) {
+            if (_underlineLinks && (_openLinksByDirectClick || (ev->modifiers() & Qt::ControlModifier))) {
                 Filter::HotSpot* spot = _filterChain->hotSpotAt(charLine, charColumn);
                 if (spot && spot->type() == Filter::HotSpot::Link) {
                     QObject action;
@@ -1981,13 +1959,13 @@ void TerminalDisplay::mouseMoveEvent(QMouseEvent* ev)
                 _mouseOverHotspotArea |= r;
             }
 
-            if (_openLinksByDirectClick && (cursor().shape() != Qt::PointingHandCursor))
+            if ((_openLinksByDirectClick || (ev->modifiers() & Qt::ControlModifier)) && (cursor().shape() != Qt::PointingHandCursor))
                 setCursor(Qt::PointingHandCursor);
 
             update(_mouseOverHotspotArea | previousHotspotArea);
         }
     } else if (!_mouseOverHotspotArea.isEmpty()) {
-        if (_underlineLinks && _openLinksByDirectClick)
+        if ((_underlineLinks && (_openLinksByDirectClick || (ev->modifiers() & Qt::ControlModifier))) || (cursor().shape() == Qt::PointingHandCursor))
             setCursor(_mouseMarks ? Qt::IBeamCursor : Qt::ArrowCursor);
 
         update(_mouseOverHotspotArea);
@@ -2107,56 +2085,18 @@ void TerminalDisplay::extendSelection(const QPoint& position)
 
     if (_wordSelectionMode) {
         // Extend to word boundaries
-        int i;
-        QChar selClass;
-
         const bool left_not_right = (here.y() < _iPntSelCorr.y() ||
                                      (here.y() == _iPntSelCorr.y() && here.x() < _iPntSelCorr.x()));
         const bool old_left_not_right = (_pntSelCorr.y() < _iPntSelCorr.y() ||
                                          (_pntSelCorr.y() == _iPntSelCorr.y() && _pntSelCorr.x() < _iPntSelCorr.x()));
         swapping = left_not_right != old_left_not_right;
 
-        // Find left (left_not_right ? from here : from start)
-        QPoint left = left_not_right ? here : _iPntSelCorr;
-        i = loc(left.x(), left.y());
-        if (i >= 0 && i <= _imageSize) {
-            selClass = charClass(_image[i]);
-            while (((left.x() > 0) || (left.y() > 0 && (_lineProperties[left.y() - 1] & LINE_WRAPPED)))
-                    && charClass(_image[i - 1]) == selClass) {
-                i--;
-                if (left.x() > 0) {
-                    left.rx()--;
-                } else {
-                    left.rx() = _usedColumns - 1;
-                    left.ry()--;
-                }
-            }
-        }
-
-        // Find left (left_not_right ? from start : from here)
-        QPoint right = left_not_right ? _iPntSelCorr : here;
-        i = loc(right.x(), right.y());
-        if (i >= 0 && i <= _imageSize) {
-            selClass = charClass(_image[i]);
-            while (((right.x() < _usedColumns - 1) || (right.y() < _usedLines - 1 && (_lineProperties[right.y()] & LINE_WRAPPED)))
-                    && charClass(_image[i + 1]) == selClass) {
-                i++;
-                if (right.x() < _usedColumns - 1) {
-                    right.rx()++;
-                } else {
-                    right.rx() = 0;
-                    right.ry()++;
-                }
-            }
-        }
-
-        // Pick which is start (ohere) and which is extension (here)
         if (left_not_right) {
-            here = left;
-            ohere = right;
+            ohere = findWordEnd(_iPntSelCorr);
+            here = findWordStart(here);
         } else {
-            here = right;
-            ohere = left;
+            ohere = findWordStart(_iPntSelCorr);
+            here = findWordEnd(here);
         }
         ohere.rx()++;
     }
@@ -2354,76 +2294,29 @@ void TerminalDisplay::mouseDoubleClickEvent(QMouseEvent* ev)
 
     getCharacterPosition(ev->pos(), charLine, charColumn);
 
-    QPoint pos(charColumn, charLine);
-
     // pass on double click as two clicks.
     if (!_mouseMarks && !(ev->modifiers() & Qt::ShiftModifier)) {
         // Send just _ONE_ click event, since the first click of the double click
         // was already sent by the click handler
-        emit mouseSignal(0,
-                         pos.x() + 1,
-                         pos.y() + 1 + _scrollBar->value() - _scrollBar->maximum(),
+        emit mouseSignal(0, charColumn + 1,
+                         charLine + 1 + _scrollBar->value() - _scrollBar->maximum(),
                          0);  // left button
         return;
     }
 
     _screenWindow->clearSelection();
-    QPoint bgnSel = pos;
-    QPoint endSel = pos;
-    int i = loc(bgnSel.x(), bgnSel.y());
-    _iPntSel = bgnSel;
-    _iPntSel.ry() += _scrollBar->value();
 
     _wordSelectionMode = true;
+    _actSel = 2; // within selection
 
-    // find word boundaries...
-    const QChar selClass = charClass(_image[i]);
-    {
-        // find the start of the word
-        int x = bgnSel.x();
-        while (((x > 0) || (bgnSel.y() > 0 && (_lineProperties[bgnSel.y() - 1] & LINE_WRAPPED)))
-                && charClass(_image[i - 1]) == selClass) {
-            i--;
-            if (x > 0) {
-                x--;
-            } else {
-                x = _usedColumns - 1;
-                bgnSel.ry()--;
-            }
-        }
+    _iPntSel = QPoint(charColumn, charLine);
+    const QPoint bgnSel = findWordStart(_iPntSel);
+    const QPoint endSel = findWordEnd(_iPntSel);
+    _iPntSel.ry() += _scrollBar->value();
 
-        bgnSel.setX(x);
-        _screenWindow->setSelectionStart(bgnSel.x() , bgnSel.y() , false);
-
-        // find the end of the word
-        i = loc(endSel.x(), endSel.y());
-        x = endSel.x();
-        while (((x < _usedColumns - 1) || (endSel.y() < _usedLines - 1 && (_lineProperties[endSel.y()] & LINE_WRAPPED)))
-                && charClass(_image[i + 1]) == selClass) {
-            i++;
-            if (x < _usedColumns - 1) {
-                x++;
-            } else {
-                x = 0;
-                endSel.ry()++;
-            }
-        }
-
-        endSel.setX(x);
-
-        // In word selection mode don't select @ (64) if at end of word.
-        if (((_image[i].rendition & RE_EXTENDED_CHAR) == 0) &&
-                (QChar(_image[i].character) == '@') &&
-                ((endSel.x() - bgnSel.x()) > 0)) {
-            endSel.setX(x - 1);
-        }
-
-        _actSel = 2; // within selection
-
-        _screenWindow->setSelectionEnd(endSel.x() , endSel.y());
-
-        copyToX11Selection();
-    }
+    _screenWindow->setSelectionStart(bgnSel.x() , bgnSel.y() , false);
+    _screenWindow->setSelectionEnd(endSel.x() , endSel.y());
+    copyToX11Selection();
 
     _possibleTripleClick = true;
 
@@ -2564,6 +2457,129 @@ QPoint TerminalDisplay::findLineEnd(const QPoint &pnt)
     return QPoint(_columns - 1, lineInHistory - topVisibleLine);
 }
 
+QPoint TerminalDisplay::findWordStart(const QPoint &pnt)
+{
+    const int regSize = qMax(_screenWindow->windowLines(), 10);
+    const int curLine = _screenWindow->currentLine();
+    int i = pnt.y();
+    int x = pnt.x();
+    int y = i + curLine;
+    int j = loc(x, i);
+    QVector<LineProperty> lineProperties = _lineProperties;
+    Screen *screen = _screenWindow->screen();
+    Character *image = _image;
+    Character *tmp_image = NULL;
+    const QChar selClass = charClass(image[j]);
+    const int imageSize = regSize * _columns;
+
+    while (true) {
+        for (;;j--, x--) {
+            if (x > 0) {
+                if (charClass(image[j - 1]) == selClass)
+                    continue;
+                goto out;
+            } else if (i > 0) {
+                if (lineProperties[i - 1] & LINE_WRAPPED &&
+                    charClass(image[j - 1]) == selClass) {
+                    x = _columns;
+                    i--;
+                    y--;
+                    continue;
+                }
+                goto out;
+            } else if (y > 0) {
+                break;
+            } else {
+                goto out;
+            }
+        }
+        int newRegStart = qMax(0, y - regSize);
+        lineProperties = screen->getLineProperties(newRegStart, y - 1);
+        i = y - newRegStart;
+        if (!tmp_image) {
+            tmp_image = new Character[imageSize];
+            image = tmp_image;
+        }
+        screen->getImage(tmp_image, imageSize, newRegStart, y - 1);
+        j = loc(x, i);
+    }
+out:
+    if (tmp_image) {
+        delete[] tmp_image;
+    }
+    return QPoint(x, y - curLine);
+}
+
+QPoint TerminalDisplay::findWordEnd(const QPoint &pnt)
+{
+    const int regSize = qMax(_screenWindow->windowLines(), 10);
+    const int curLine = _screenWindow->currentLine();
+    int i = pnt.y();
+    int x = pnt.x();
+    int y = i + curLine;
+    int j = loc(x, i);
+    QVector<LineProperty> lineProperties = _lineProperties;
+    Screen *screen = _screenWindow->screen();
+    Character *image = _image;
+    Character *tmp_image = NULL;
+    const QChar selClass = charClass(image[j]);
+    const int imageSize = regSize * _columns;
+    const int maxY = _screenWindow->lineCount() - 1;
+    const int maxX = _columns - 1;
+
+    while (true) {
+        const int lineCount = lineProperties.count();
+        for (;;j++, x++) {
+            if (x < maxX) {
+                if (charClass(image[j + 1]) == selClass)
+                    continue;
+                goto out;
+            } else if (i < lineCount - 1) {
+                if (lineProperties[i] & LINE_WRAPPED &&
+                    charClass(image[j + 1]) == selClass) {
+                    x = -1;
+                    i++;
+                    y++;
+                    continue;
+                }
+                goto out;
+            } else if (y < maxY) {
+                if (i < lineCount && !(lineProperties[i] & LINE_WRAPPED))
+                    goto out;
+                break;
+            } else {
+                goto out;
+            }
+        }
+        int newRegEnd = qMin(y + regSize - 1, maxY);
+        lineProperties = screen->getLineProperties(y, newRegEnd);
+        i = 0;
+        if (!tmp_image) {
+            tmp_image = new Character[imageSize];
+            image = tmp_image;
+        }
+        screen->getImage(tmp_image, imageSize, y, newRegEnd);
+        x--;
+        j = loc(x, i);
+    }
+out:
+    y -= curLine;
+    // In word selection mode don't select @ (64) if at end of word.
+    if (((image[j].rendition & RE_EXTENDED_CHAR) == 0) &&
+        (QChar(image[j].character) == '@') &&
+        (y > pnt.y() || x > pnt.x())) {
+        if (x > 0) {
+            x--;
+        } else {
+            y--;
+        }
+    }
+    if (tmp_image) {
+        delete[] tmp_image;
+    }
+    return QPoint(x, y);
+}
+
 void TerminalDisplay::mouseTripleClickEvent(QMouseEvent* ev)
 {
     if (!_screenWindow) return;
@@ -2571,7 +2587,13 @@ void TerminalDisplay::mouseTripleClickEvent(QMouseEvent* ev)
     int charLine;
     int charColumn;
     getCharacterPosition(ev->pos(), charLine, charColumn);
-    _iPntSel = QPoint(charColumn, charLine);
+    selectLine(QPoint(charColumn, charLine),
+               _tripleClickMode == Enum::SelectWholeLine);
+}
+
+void TerminalDisplay::selectLine(QPoint pos, bool entireLine)
+{
+    _iPntSel = pos;
 
     _screenWindow->clearSelection();
 
@@ -2580,33 +2602,11 @@ void TerminalDisplay::mouseTripleClickEvent(QMouseEvent* ev)
 
     _actSel = 2; // within selection
 
-    while (_iPntSel.y() > 0 && (_lineProperties[_iPntSel.y() - 1] & LINE_WRAPPED))
-        _iPntSel.ry()--;
-
-    if (_tripleClickMode == Enum::SelectForwardsFromCursor) {
-        // find word boundary start
-        int i = loc(_iPntSel.x(), _iPntSel.y());
-        const QChar selClass = charClass(_image[i]);
-        int x = _iPntSel.x();
-
-        while (((x > 0) ||
-                (_iPntSel.y() > 0 && (_lineProperties[_iPntSel.y() - 1] & LINE_WRAPPED))
-               )
-                && charClass(_image[i - 1]) == selClass) {
-            i--;
-            if (x > 0) {
-                x--;
-            } else {
-                x = _columns - 1;
-                _iPntSel.ry()--;
-            }
-        }
-
-        _screenWindow->setSelectionStart(x , _iPntSel.y() , false);
-        _tripleSelBegin = QPoint(x, _iPntSel.y());
-    } else if (_tripleClickMode == Enum::SelectWholeLine) {
-        // reset _IPntSel  - remove once findWord is implemented
-        _iPntSel = QPoint(charColumn, charLine);
+    if (!entireLine) { // Select from cursor to end of line
+        _tripleSelBegin = findWordStart(_iPntSel);
+        _screenWindow->setSelectionStart(_tripleSelBegin.x(),
+                                         _tripleSelBegin.y() , false);
+    } else {
         _tripleSelBegin = findLineStart(_iPntSel);
         _screenWindow->setSelectionStart(0 , _tripleSelBegin.y() , false);
     }
@@ -2617,6 +2617,13 @@ void TerminalDisplay::mouseTripleClickEvent(QMouseEvent* ev)
     copyToX11Selection();
 
     _iPntSel.ry() += _scrollBar->value();
+}
+
+void TerminalDisplay::selectCurrentLine()
+{
+    if (!_screenWindow) return;
+
+    selectLine(cursorPosition(), true);
 }
 
 bool TerminalDisplay::focusNextPrevChild(bool next)
@@ -2673,6 +2680,15 @@ bool TerminalDisplay::usesMouse() const
     return _mouseMarks;
 }
 
+void TerminalDisplay::setBracketedPasteMode(bool on)
+{
+    _bracketedPasteMode = on;
+}
+bool TerminalDisplay::bracketedPasteMode() const
+{
+    return _bracketedPasteMode;
+}
+
 /* ------------------------------------------------------------------------- */
 /*                                                                           */
 /*                               Clipboard                                   */
@@ -2701,6 +2717,10 @@ void TerminalDisplay::doPaste(QString text, bool appendReturn)
 
     if (!text.isEmpty()) {
         text.replace('\n', '\r');
+        if (bracketedPasteMode()) {
+            text.prepend("\e[200~");
+            text.append("\e[201~");
+        }
         // perform paste by simulating keypress events
         QKeyEvent e(QEvent::KeyPress, 0, Qt::NoModifier, text);
         emit keyPressedSignal(&e);
@@ -2868,9 +2888,10 @@ void TerminalDisplay::outputSuspended(bool suspended)
         //If there isn't a suitable article available in the target language the link
         //can simply be removed.
         _outputSuspendedLabel = new QLabel(i18n("<qt>Output has been "
-                                                "<a href=\"http://en.wikipedia.org/wiki/Flow_control\">suspended</a>"
+                                                "<a href=\"http://en.wikipedia.org/wiki/Software_flow_control\">suspended</a>"
                                                 " by pressing Ctrl+S."
-                                                "  Press <b>Ctrl+Q</b> to resume.</qt>"),
+                                                "  Press <b>Ctrl+Q</b> to resume."
+                                                "  This message will be dismissed in 10 seconds.</qt>"),
                                            this);
 
         QPalette palette(_outputSuspendedLabel->palette());
@@ -2878,7 +2899,7 @@ void TerminalDisplay::outputSuspended(bool suspended)
         _outputSuspendedLabel->setPalette(palette);
         _outputSuspendedLabel->setAutoFillBackground(true);
         _outputSuspendedLabel->setBackgroundRole(QPalette::Base);
-        _outputSuspendedLabel->setFont(KGlobalSettings::generalFont());
+        _outputSuspendedLabel->setFont(KGlobalSettings::smallestReadableFont());
         _outputSuspendedLabel->setContentsMargins(5, 5, 5, 5);
 
         //enable activation of "Xon/Xoff" link in label
@@ -2891,9 +2912,19 @@ void TerminalDisplay::outputSuspended(bool suspended)
         _gridLayout->addItem(new QSpacerItem(0, 0, QSizePolicy::Expanding,
                                              QSizePolicy::Expanding),
                              1, 0);
+
+    }
+    // Remove message after a few seconds
+    if (suspended) {
+        QTimer::singleShot(10000, this, SLOT(dismissOutputSuspendedMessage()));
     }
 
     _outputSuspendedLabel->setVisible(suspended);
+}
+
+void TerminalDisplay::dismissOutputSuspendedMessage()
+{
+    outputSuspended(false);
 }
 
 void TerminalDisplay::scrollScreenWindow(enum ScreenWindow::RelativeScrollMode mode, int amount)

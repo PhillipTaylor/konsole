@@ -40,14 +40,14 @@
 <holder>&Jonathan.Singer;</holder>
 </copyright>
 <copyright>
-<year>2005</year><year>2008</year><year>2009</year><year>2010</year><year>2011</year>
+<year>2005</year><year>2008</year><year>2009</year><year>2010</year><year>2011</year><year>2014</year>
 <holder>&Kurt.Hindenburg;</holder>
 </copyright>
 
 <legalnotice>&FDLNotice;</legalnotice>
 
-<date>2013-05-19</date>
-<releaseinfo>2.11 (&kde; 4.11)</releaseinfo>
+<date>2014-02-09</date>
+<releaseinfo>2.13 (&kde; 4.13)</releaseinfo>
 
 <abstract><para>&konsole; is &kde;'s terminal emulator.</para></abstract>
 
@@ -248,7 +248,7 @@ is pressed:
 <guimenuitem>Show Menu Bar</guimenuitem>,
 <guimenuitem>Switch Profile</guimenuitem>,
 <guimenuitem>Edit Current Profile...</guimenuitem>,
-and <guimenuitem>Close Tab</guimenuitem>
+and <guimenuitem>Close Tab</guimenuitem>.
 </para>
 
 <para>In a mouse aware application, press the &Shift; key along with the
@@ -391,6 +391,16 @@ There will be no submenu if only the default profile is to be shown.
 </varlistentry>
 
 <varlistentry>
+<term><menuchoice>
+<shortcut><keycombo action="simul">&Ctrl;&Shift;<keycap>P</keycap></keycombo></shortcut>
+<guimenu>File</guimenu>
+<guimenuitem>Print Screen ...</guimenuitem></menuchoice></term>
+<listitem><para><action>Print the current screen.</action> By default the output is scaled to fit the size of the paper
+being printed on with black text color and no background. In the print dialog these options can be changed on the
+<guilabel>Output Options</guilabel> tab.</para></listitem>
+</varlistentry>
+
+<varlistentry>
 <term><menuchoice><guimenu>File</guimenu>
 <guimenuitem>Open File Manager</guimenuitem></menuchoice>
 </term>
@@ -448,16 +458,14 @@ CloseAllTabs=true
 <term><menuchoice>
 <shortcut><keycombo
  action="simul">&Ctrl;&Shift;<keycap>V</keycap></keycombo></shortcut>
-<guimenu>Edit</guimenu><guimenuitem>Paste
-</guimenuitem></menuchoice></term>
+<guimenu>Edit</guimenu><guimenuitem>Paste</guimenuitem></menuchoice></term>
 <listitem><para><action>Pastes text from the clipboard at the cursor
 location</action></para></listitem>
 </varlistentry>
 
 <varlistentry>
 <term><menuchoice>
-<guimenu>Edit</guimenu><guimenuitem>Select All
-</guimenuitem></menuchoice></term>
+<guimenu>Edit</guimenu><guimenuitem>Select All</guimenuitem></menuchoice></term>
 <listitem><para><action>Selects all</action> the text in current window
 </para></listitem>
 </varlistentry>
@@ -572,7 +580,30 @@ the name of the current tab</action>
 <para>This allows for case sensitive, forward or backwards, and regular expressions searches.</para>
 </listitem>
 </varlistentry>
-
+<!--FIXME 4.12
+Various search improvements
+  - Do not automatically reset the search start line on search hits
+ This was causing the annoying behavior that if you were to pause while typing
+ in a search term, and it would actually find a hit, then you would be searching
+ for the term a second time once you finish typing.
+ 
+ This commit introduces two new behaviors:
+ 1. When you show the search bar, all searching will be done from the first
+ visible line in the terminal.
+ 2. This start position is only reset when you
+ advance to the next result, by pressing "next", "previous", or the shortcuts
+ RETURN or SHIFT-RETURN
+ 
+ - When the view scrolls to a result, it will appear centered.
+ - When showing the search bar, do not invoke a search, only apply the highlight filters
+ - Add "search from beginning/end" button
+ This will scroll to the top/bottom before searching
+ Ctrl+return is also bound to this action
+ - Text highlighted by mouse will be set as the current search text when the incremental
+ search bar is opened
+ - Add "Search backwards" to search bar options
+ Button text is swapped according to reverse search switch 
+-->
 <varlistentry>
 <term><menuchoice>
 <shortcut><keycombo><keycap>F3</keycap></keycombo></shortcut>
@@ -626,8 +657,7 @@ Any output on one view is duplicated in the other view.
 <varlistentry>
 <term><menuchoice>
 <shortcut><keycombo action="simul">&Ctrl;&Shift;<keycap>S</keycap></keycombo></shortcut>
-<guimenu>View</guimenu><guisubmenu>Split View</guisubmenu><guimenuitem>
-Close Active</guimenuitem></menuchoice>
+<guimenu>View</guimenu><guisubmenu>Split View</guisubmenu><guimenuitem>Close Active</guimenuitem></menuchoice>
 </term>
 <listitem><para><action>Closes the current view</action>
 </para></listitem>
@@ -636,8 +666,7 @@ Close Active</guimenuitem></menuchoice>
 <varlistentry>
 <term><menuchoice>
 <shortcut><keycombo action="simul">&Ctrl;&Shift;<keycap>O</keycap></keycombo></shortcut>
-<guimenu>View</guimenu><guisubmenu>Split View</guisubmenu><guimenuitem>
-Close Others</guimenuitem></menuchoice>
+<guimenu>View</guimenu><guisubmenu>Split View</guisubmenu><guimenuitem>Close Others</guimenuitem></menuchoice>
 </term>
 <listitem><para><action>Closes all non-current views</action>
 </para></listitem>
@@ -835,7 +864,48 @@ Menu Bar</guimenuitem></menuchoice></term>
 <varlistentry>
 <term><menuchoice><guimenu>Settings</guimenu><guimenuitem>Configure
 Shortcuts...</guimenuitem></menuchoice></term>
-<listitem><para><action>Opens the keyboard shortcut editor</action></para>
+<listitem><para><action>Opens the keyboard shortcut editor.</action> More on shortcuts configuration
+can be found in the <ulink url="help:/fundamentals/shortcuts.html">&kde; Fundamentals</ulink>.</para>
+
+<para>Additionally &konsole; has a few special shortcuts with no corresponding menu item:</para>
+
+<informaltable>
+<tgroup cols="2">
+<thead>
+<row>
+<entry>Shortcut</entry>
+<entry>Description</entry>
+</row>
+</thead>
+<tbody>
+<row>
+<entry><keycombo action="simul">&Shift;<keysym>Right</keysym></keycombo></entry>
+<entry>Next Tab</entry>
+</row>
+<row>
+<entry><keycombo action="simul">&Shift;<keysym>Left</keysym></keycombo></entry>
+<entry>Previous Tab</entry>
+</row>
+<row>
+<entry><keycombo action="simul">&Ctrl;&Shift;<keysym>Left</keysym></keycombo></entry>
+<entry>Move Tab Left</entry>
+</row>
+<row>
+<entry><keycombo action="simul">&Ctrl;&Shift;<keysym>Right</keysym></keycombo></entry>
+<entry>Move Tab Right</entry>
+</row>
+<row>
+<entry><keycombo action="simul">&Ctrl;&Shift;<keysym>Ins</keysym></keycombo></entry>
+<entry>Paste Selection</entry>
+</row>
+<row>
+<entry><keycombo action="simul">&Shift;&Tab;</keycombo></entry>
+<entry>Next View Container</entry> <!--FIXME what is this:yurchor container widget which holds views-->
+</row>
+</tbody>
+</tgroup>
+</informaltable>
+
 </listitem>
 </varlistentry>
 
@@ -868,7 +938,7 @@ When the window title from current session is emtpy, fallback to using
 <para>&konsole; has the some of the common &kde; <guimenu>Help</guimenu>
 menu items, for more information read the section about the <ulink url="help:/fundamentals/ui.html#menus-help">Help Menu</ulink>
 of the &kde; Fundamentals.
-</para><!-- Only negative to using this is it shows shortcut F1 for Handbook -->
+</para><!-- Only negative to using this is that it shows shortcut F1 for Handbook -->
 </sect2>
 
 </sect1>
@@ -983,32 +1053,26 @@ can be specified to modify its behavior.</para>
 </varlistentry>
 
 <varlistentry>
-<term><option>--fallback-profile</option> <parameter>file</parameter></term>
-<listitem><para>Use the internal FALLBACK profile. <!--FIXME what is the internal Fallback profile--></para></listitem>
-</varlistentry>
-
-<varlistentry>
 <term><option>--profile</option> <parameter>file</parameter></term>
 <listitem><para><action>Start &konsole;</action> using the specified profile
 instead of the default profile.</para></listitem>
 </varlistentry>
 
 <varlistentry>
-<term><option>--list-profiles</option></term>
-<listitem><para><action>List</action> all available profiles.
-</para></listitem>
+<term><option>--fallback-profile</option></term>
+<listitem><para>Use the internal FALLBACK profile. This option is a shortcut for <option>--profile</option> <parameter>FALLBACK/</parameter>.<!--FIXME what is the internal Fallback profile--></para></listitem>
 </varlistentry>
 
 <varlistentry>
-<term><option>--list-profile-properties</option></term>
-<listitem>
-<para><action>List</action> all possible properties with name and type. See option <option>-p</option> .
-</para>
-<para>
-For more information, please visit
-<ulink url="http://api.kde.org/4.x-api/kde-baseapps-apidocs/konsole/html/classKonsole_1_1Profile.html#a57848e15fe69d3f27565851fe7cda429">&konsole; API Reference</ulink>.
-</para>
-</listitem>
+<term><option>--workdir</option> <parameter>dir</parameter></term>
+<listitem><para><action>Open with</action>
+<parameter>dir</parameter> as the initial working directory.</para></listitem>
+</varlistentry>
+
+<varlistentry>
+<term><option>--hold, --noclose</option></term>
+<listitem><para><action>Do not close</action> the initial session automatically when it ends.
+</para></listitem>
 </varlistentry>
 
 <varlistentry>
@@ -1042,9 +1106,15 @@ Empty lines or lines with <userinput>#</userinput> at the beginning are ignored,
 </varlistentry>
 
 <varlistentry>
-<term><option>--workdir</option> <parameter>dir</parameter></term>
-<listitem><para><action>Open with</action>
-<parameter>dir</parameter> as the initial working directory.</para></listitem>
+<term><option>--background-mode</option></term>
+<listitem><para><action>Start &konsole;</action> in the background and bring to the front when <keycombo action="simul">&Ctrl;&Shift;<keycap>F12</keycap></keycombo> (by default) is pressed.
+</para></listitem>
+</varlistentry>
+
+<varlistentry>
+<term><option>--separate</option></term>
+<listitem><para><action>Run</action> the new instance of &konsole; in a separate process.
+</para></listitem>
 </varlistentry>
 
 <varlistentry>
@@ -1072,15 +1142,32 @@ Empty lines or lines with <userinput>#</userinput> at the beginning are ignored,
 </varlistentry>
 
 <varlistentry>
+<term><option>--fullscreen</option></term>
+<listitem><para><action>Start &konsole; in fullscreen mode</action>.</para></listitem>
+</varlistentry>
+
+<varlistentry>
 <term><option>--notransparency</option></term>
 <listitem><para><action>Disable</action> transparent backgrounds, even if the system supports them.
 </para></listitem>
 </varlistentry>
 
 <varlistentry>
-<term><option>--hold, --noclose</option></term>
-<listitem><para><action>Do not close</action> the initial session automatically when it ends.
+<term><option>--list-profiles</option></term>
+<listitem><para><action>List</action> all available profiles.
 </para></listitem>
+</varlistentry>
+
+<varlistentry>
+<term><option>--list-profile-properties</option></term>
+<listitem>
+<para><action>List</action> all possible properties with name and type. See option <option>-p</option> .
+</para>
+<para>
+For more information, please visit
+<ulink url="http://api.kde.org/4.x-api/kde-baseapps-apidocs/konsole/html/classKonsole_1_1Profile.html#a57848e15fe69d3f27565851fe7cda429">&konsole; API Reference</ulink>.
+</para>
+</listitem>
 </varlistentry>
 
 <varlistentry>
@@ -1101,11 +1188,6 @@ Empty lines or lines with <userinput>#</userinput> at the beginning are ignored,
 <term><option>--nofork</option></term>
 <listitem><para><action>Do not run in the background</action>.  This is often needed to mimic other terminal emulators.
 </para></listitem>
-</varlistentry>
-
-<varlistentry>
-<term><option>--fullscreen</option></term>
-<listitem><para><action>Start &konsole; in fullscreen mode</action>.</para></listitem>
 </varlistentry>
 
 </variablelist>
@@ -1234,6 +1316,84 @@ If you start &konsole; from a terminal you may need to change
 <para>
 For more information, please visit
 <ulink url="http://techbase.kde.org/Development/Tutorials/D-Bus/Introduction">&DBus; tutorial</ulink>.
+</para>
+
+</chapter>
+
+<chapter id="tabbarstylsheet">
+<title>Using Style Sheet for the Tab Bar</title>
+<para>
+The default style sheet for the tab bar sets the minimum and maximum tab
+widths.  The user can create a <filename role="extension">.css</filename> file and have &konsole; use that as the
+style sheet for the tab bar.  In the <filename role="extension">.css</filename> file, the widget to use is
+<userinput>QTabBar::tab</userinput>.
+</para>
+<para>
+For more information, consider reading
+<ulink url="http://qt-project.org/doc/qt-4.8/stylesheet.html">&Qt; Project page for Style Sheets</ulink>
+</para>
+
+<para>
+Examples:
+
+</para>
+
+<para>
+<itemizedlist mark='opencircle'>
+
+<listitem><para>
+Change the selected tab's background to a light gray
+<programlisting>
+QTabBar::tab:selected {
+    background: #999999
+}
+</programlisting>
+</para></listitem>
+
+
+<listitem><para>
+Change the selected tab's text to red
+<programlisting>
+QTabBar::tab:selected {
+    color: red
+}
+</programlisting>
+</para></listitem>
+
+<listitem><para>
+All tabs will be at least 200 pixels in width
+<programlisting>
+QTabBar::tab {
+    min-width: 200px
+}
+</programlisting>
+</para></listitem>
+
+<listitem><para>
+Only the selected tab will be at least 200 pixels in width
+<programlisting>
+QTabBar::tab::selected {
+    min-width: 200px
+}
+</programlisting>
+</para></listitem>
+
+<listitem><para>
+Any of these can be combined in one file
+<programlisting>
+QTabBar::tab::selected {
+    background: #999999;
+    color: red;
+    min-width: 200px;
+}
+QTabBar::tab {
+    min-width: 100px
+}
+</programlisting>
+</para></listitem>
+
+
+</itemizedlist>
 </para>
 
 </chapter>

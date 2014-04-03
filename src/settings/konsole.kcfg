@@ -15,6 +15,11 @@
       <tooltip>Show window title set by escape sequence on the titlebar</tooltip>
       <default>false</default>
     </entry>
+    <entry name="ShowAppNameOnTitleBar" type="Bool">
+      <label>Show "- Konsole" on the titlebar</label>
+      <tooltip>Show "- Konsole" on the titlebar</tooltip>
+      <default>true</default>
+    </entry>
     <entry name="AllowMenuAccelerators" type="Bool">
       <label>Enable menu accelerators</label>
       <tooltip>Allow users to access top menu through Alt+Key combination</tooltip>
@@ -26,7 +31,7 @@
       <default>true</default>
     </entry>
     <entry name="SaveGeometryOnExit" type="Bool">
-      <label>Save window size on exit</label>
+      <label>Use current window size on next startup</label>
       <tooltip>The window size will be saved upon exiting Konsole</tooltip>
       <default>true</default>
     </entry>
@@ -52,6 +57,14 @@
     <entry name="TabBarStyleSheet" type="String">
       <label>Control the visual style of the tab bar</label>
       <default>QTabBar::tab { min-width: 2em ; max-width: 25em }</default>
+    </entry>
+    <entry name="TabBarUseUserStyleSheet" type="Bool">
+      <label>Use a user-defined .css file for the tab bar</label>
+      <default>false</default>
+    </entry>
+    <entry name="TabBarUserStyleSheetFile" type="Url">
+      <label>The .css file to use for the tab bar style</label>
+      <default></default>
     </entry>
     <entry name="ShowQuickButtons" type="Bool">
       <label>Control the visibility of quick buttons on the tab bar</label>

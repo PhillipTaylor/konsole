@@ -1,5 +1,4 @@
 /*
-    Copyright 2008 by Robert Knight <robertknight@gmail.com>
     Copyright 2013 by Kurt Hindenburg <kurt.hindenburg@gmail.com>
 
     This program is free software; you can redistribute it and/or modify
@@ -18,33 +17,24 @@
     02110-1301  USA.
 */
 
-#ifndef SHELLCOMMANDTEST_H
-#define SHELLCOMMANDTEST_H
+#ifndef KEYBOARDTRANSLATORTEST_H
+#define KEYBOARDTRANSLATORTEST_H
 
-#include "../ShellCommand.h"
+#include "../KeyboardTranslator.h"
 
 namespace Konsole
 {
 
-class ShellCommandTest : public QObject
+class KeyboardTranslatorTest : public QObject
 {
     Q_OBJECT
 
 private slots:
-    void init();
-    void cleanup();
-
-    void testConstructorWithOneArguemnt();
-    void testConstructorWithTwoArguments();
-    void testExpandEnvironmentVariable();
-    void testValidEnvCharacter();
-    void testValidLeadingEnvCharacter();
-    void testArgumentsWithSpaces();
-    void testEmptyCommand();
-
+    void testEntryTextWildcards();
+    void testEntryTextWildcards_data();
 };
 
 }
 
-#endif // SHELLCOMMANDTEST_H
+#endif // KEYBOARDTRANSLATORTEST_H
 

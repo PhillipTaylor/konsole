@@ -642,6 +642,8 @@ void Vt102Emulation::processToken(int token, int p, int q)
     case TY_CSI_PN('B'      ) : _currentScreen->cursorDown           (p         ); break; //VT100
     case TY_CSI_PN('C'      ) : _currentScreen->cursorRight          (p         ); break; //VT100
     case TY_CSI_PN('D'      ) : _currentScreen->cursorLeft           (p         ); break; //VT100
+    case TY_CSI_PN('E'      ) : /* Not implemented: cursor next p lines */         break; //VT100
+    case TY_CSI_PN('F'      ) : /* Not implemented: cursor preceding p lines */    break; //VT100
     case TY_CSI_PN('G'      ) : _currentScreen->setCursorX           (p         ); break; //LINUX
     case TY_CSI_PN('H'      ) : _currentScreen->setCursorYX          (p,      q); break; //VT100
     case TY_CSI_PN('I'      ) : _currentScreen->tab                  (p         ); break;
@@ -788,6 +790,11 @@ void Vt102Emulation::processToken(int token, int p, int q)
     //       Here's a guess of what they could mean.
     case TY_CSI_PR('h', 1049) : saveCursor(); _screen[1]->clearEntireScreen(); setMode(MODE_AppScreen); break; //XTERM
     case TY_CSI_PR('l', 1049) : resetMode(MODE_AppScreen); restoreCursor(); break; //XTERM
+
+    case TY_CSI_PR('h', 2004) :          setMode      (MODE_BracketedPaste); break; //XTERM
+    case TY_CSI_PR('l', 2004) :        resetMode      (MODE_BracketedPaste); break; //XTERM
+    case TY_CSI_PR('s', 2004) :         saveMode      (MODE_BracketedPaste); break; //XTERM
+    case TY_CSI_PR('r', 2004) :      restoreMode      (MODE_BracketedPaste); break; //XTERM
 
     //FIXME: weird DEC reset sequence
     case TY_CSI_PE('p'      ) : /* IGNORED: reset         (        ) */ break;
@@ -1196,6 +1203,7 @@ void Vt102Emulation::resetModes()
     resetMode(MODE_Mouse1005);  saveMode(MODE_Mouse1005);
     resetMode(MODE_Mouse1006);  saveMode(MODE_Mouse1006);
     resetMode(MODE_Mouse1015);  saveMode(MODE_Mouse1015);
+    resetMode(MODE_BracketedPaste);  saveMode(MODE_BracketedPaste);
 
     resetMode(MODE_AppScreen);  saveMode(MODE_AppScreen);
     resetMode(MODE_AppCuKeys);  saveMode(MODE_AppCuKeys);
@@ -1219,6 +1227,10 @@ void Vt102Emulation::setMode(int m)
     case MODE_Mouse1002:
     case MODE_Mouse1003:
         emit programUsesMouseChanged(false);
+        break;
+
+    case MODE_BracketedPaste:
+        emit programBracketedPasteModeChanged(true);
         break;
 
     case MODE_AppScreen :
@@ -1247,6 +1259,10 @@ void Vt102Emulation::resetMode(int m)
     case MODE_Mouse1002 :
     case MODE_Mouse1003 :
         emit programUsesMouseChanged(true);
+        break;
+
+    case MODE_BracketedPaste:
+        emit programBracketedPasteModeChanged(false);
         break;
 
     case MODE_AppScreen :

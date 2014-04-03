@@ -555,8 +555,18 @@ void ViewManager::createView(Session* session, ViewContainer* container, int ind
     // set initial size
     const QSize& preferredSize = session->preferredSize();
     // FIXME: +1 is needed here for getting the expected rows
-    display->setSize(preferredSize.width(), preferredSize.height() + 1);
+    // Note that the display shouldn't need to take into account the tabbar.
+    // However, it appears that taking into account the tabbar is needed.
+    // If tabbar is not visible, no +1 is needed here; however, depending on
+    // settings/tabbar style, +2 might be needed.
+    // 1st attempt at fixing the above:
+    // Guess if tabbar will NOT be visible; ignore ShowNavigationAsNeeded
+    int heightAdjustment = 0;
+    if (_navigationVisibility != ViewContainer::AlwaysHideNavigation) {
+        heightAdjustment = 2;
+    }
 
+    display->setSize(preferredSize.width(), preferredSize.height() + heightAdjustment);
     ViewProperties* properties = createController(session, display);
 
     _sessionMap[display] = session;
@@ -789,8 +799,6 @@ const ColorScheme* ViewManager::colorSchemeForProfile(const Profile::Ptr profile
 void ViewManager::applyProfileToView(TerminalDisplay* view , const Profile::Ptr profile)
 {
     Q_ASSERT(profile);
-
-    emit setSaveGeometryOnExitRequest(profile->saveGeometryOnExit());
 
     emit updateWindowIcon();
 

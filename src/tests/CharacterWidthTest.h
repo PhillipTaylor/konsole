@@ -1,6 +1,5 @@
 /*
-    Copyright 2008 by Robert Knight <robertknight@gmail.com>
-    Copyright 2013 by Kurt Hindenburg <kurt.hindenburg@gmail.com>
+    Copyright 2014 by Kurt Hindenburg <kurt.hindenburg@gmail.com>
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -18,33 +17,26 @@
     02110-1301  USA.
 */
 
-#ifndef SHELLCOMMANDTEST_H
-#define SHELLCOMMANDTEST_H
+#ifndef CHARACTERTWIDTHTEST_H
+#define CHARACTERTWIDTHTEST_H
 
-#include "../ShellCommand.h"
+#include <QObject>
 
 namespace Konsole
 {
 
-class ShellCommandTest : public QObject
+class CharacterWidthTest : public QObject
 {
     Q_OBJECT
 
 private slots:
-    void init();
-    void cleanup();
 
-    void testConstructorWithOneArguemnt();
-    void testConstructorWithTwoArguments();
-    void testExpandEnvironmentVariable();
-    void testValidEnvCharacter();
-    void testValidLeadingEnvCharacter();
-    void testArgumentsWithSpaces();
-    void testEmptyCommand();
+    void testWidth_data();
+    void testWidth();
 
 };
 
 }
 
-#endif // SHELLCOMMANDTEST_H
+#endif // CHARACTERTWIDTHTEST_H
 

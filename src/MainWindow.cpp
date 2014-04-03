@@ -77,6 +77,23 @@ MainWindow::MainWindow()
     , _menuBarInitialVisibility(true)
     , _menuBarInitialVisibilityApplied(false)
 {
+    if (!KonsoleSettings::saveGeometryOnExit()) {
+        // If we are not using the global Konsole save geometry on exit,
+        // remove all Height and Width from [MainWindow] from konsolerc
+        // Each screen resolution will have entries (Width 1280=619)
+        KSharedConfigPtr konsoleConfig = KSharedConfig::openConfig("konsolerc");
+        KConfigGroup group = konsoleConfig->group("MainWindow");
+        QMap<QString, QString> configEntries = group.entryMap();
+        QMapIterator<QString, QString> i(configEntries);
+        while (i.hasNext()) {
+            i.next();
+            if (i.key().startsWith(QLatin1String("Width")) 
+                    || i.key().startsWith(QLatin1String("Height"))) {
+                group.deleteEntry(i.key());
+            }
+        }
+    }
+
     if (useTransparency()) {
         // It is useful to have translucent terminal area
         setAttribute(Qt::WA_TranslucentBackground, true);
@@ -97,8 +114,6 @@ MainWindow::MainWindow()
     connect(_viewManager, SIGNAL(viewPropertiesChanged(QList<ViewProperties*>)),
             bookmarkHandler(), SLOT(setViews(QList<ViewProperties*>)));
 
-    connect(_viewManager, SIGNAL(setSaveGeometryOnExitRequest(bool)), this,
-            SLOT(setSaveGeometryOnExit(bool)));
     connect(_viewManager, SIGNAL(updateWindowIcon()), this,
             SLOT(updateWindowIcon()));
     connect(_viewManager, SIGNAL(newViewRequest(Profile::Ptr)),
@@ -164,12 +179,6 @@ void MainWindow::restoreMenuAccelerators()
         QString itemText = menuItem->data().toString();
         menuItem->setText(itemText);
     }
-}
-
-void MainWindow::setSaveGeometryOnExit(bool save)
-{
-    // enable save and restore of window size
-    setAutoSaveSettings("MainWindow", save);
 }
 
 void MainWindow::correctStandardShortcuts()
@@ -266,7 +275,11 @@ void MainWindow::updateWindowCaption()
         caption = userTitle;
     }
 
-    setCaption(caption);
+    if (KonsoleSettings::showAppNameOnTitleBar()) {
+        setCaption(caption);
+    } else {
+        setPlainCaption(caption);
+    }
 }
 
 void MainWindow::updateWindowIcon()
@@ -325,7 +338,7 @@ void MainWindow::setupActions()
 
     // Full Screen
     menuAction = KStandardAction::fullScreen(this, SLOT(viewFullScreen(bool)), this, collection);
-    menuAction->setShortcut(QKeySequence());
+    menuAction->setShortcut(QKeySequence(Qt::Key_F11));
 
     KStandardAction::configureNotifications(this, SLOT(configureNotifications()), collection);
     KStandardAction::keyBindings(this, SLOT(showShortcutsDialog()), collection);
@@ -525,11 +538,25 @@ bool MainWindow::queryClose()
         return true;
     }
 
-    // TODO: Ideally, we should check what process is running instead
-    //       of just how many sessions are running.
-    // If only 1 session is running, don't ask user to confirm close.
-    const int openTabs = _viewManager->viewProperties().count();
-    if (openTabs < 2) {
+    // Check what processes are running,
+    // if just the default shell is running don't ask for confirmation
+
+    QStringList processesRunning;
+    foreach(Session *session, _viewManager->sessions()) {
+        if (!session)
+            continue;
+
+        const QString defaultProc = session->program().split('/').last();
+        const QString currentProc = session->foregroundProcessName().split('/').last();
+
+        if (currentProc.isEmpty())
+            continue;
+
+        if (defaultProc != currentProc) {
+            processesRunning.append(currentProc);
+        }
+    }
+    if (processesRunning.count() == 0) {
         return true;
     }
 
@@ -542,11 +569,13 @@ bool MainWindow::queryClose()
         KWindowSystem::unminimizeWindow(winId(), true);
     }
 
-    int result = KMessageBox::warningYesNoCancel(this,
-                 i18ncp("@info", "There are %1 tab open in this window. "
+    int result = KMessageBox::warningYesNoCancelList(this,
+                 i18ncp("@info", "There is a process running in this window. "
                         "Do you still want to quit?",
-                        "There are %1 tabs open in this window. "
-                        "Do you still want to quit?", openTabs),
+                        "There are %1 processes running in this window. "
+                        "Do you still want to quit?",
+                        processesRunning.count()),
+                 processesRunning,
                  i18nc("@title", "Confirm Close"),
                  KGuiItem(i18nc("@action:button", "Close &Window"), "window-close"),
                  KGuiItem(i18nc("@action:button", "Close Current &Tab"), "tab-close"),
@@ -669,11 +698,17 @@ void MainWindow::applyKonsoleSettings()
 
     setNavigationVisibility(KonsoleSettings::tabBarVisibility());
     setNavigationPosition(KonsoleSettings::tabBarPosition());
-    setNavigationStyleSheet(KonsoleSettings::tabBarStyleSheet());
     setNavigationBehavior(KonsoleSettings::newTabBehavior());
     setShowQuickButtons(KonsoleSettings::showQuickButtons());
 
-    // setAutoSaveSettings("MainWindow", KonsoleSettings::saveGeometryOnExit());
+    if (KonsoleSettings::tabBarUseUserStyleSheet()) {
+        setNavigationStyleSheetFromFile(KonsoleSettings::tabBarUserStyleSheetFile());
+    } else {
+        // Apply default values
+        setNavigationStyleSheet(KonsoleSettings::tabBarStyleSheet());
+    }
+
+    setAutoSaveSettings("MainWindow", KonsoleSettings::saveGeometryOnExit());
 
     updateWindowCaption();
 }
@@ -696,6 +731,28 @@ void MainWindow::setNavigationStyleSheet(const QString& styleSheet)
 void MainWindow::setNavigationBehavior(int behavior)
 {
     _viewManager->setNavigationBehavior(behavior);
+}
+
+void MainWindow::setNavigationStyleSheetFromFile(const KUrl& styleSheetFile)
+{
+    // Let's only deal w/ local files for now
+    if (!styleSheetFile.isLocalFile()) {
+        setNavigationStyleSheet(KonsoleSettings::tabBarStyleSheet());
+    }
+
+    QFile file(styleSheetFile.toLocalFile());
+    if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
+        setNavigationStyleSheet(KonsoleSettings::tabBarStyleSheet());
+    }
+
+    QString styleSheetText;
+    QTextStream in(&file);
+    while (!in.atEnd()) {
+        styleSheetText.append(in.readLine());
+    }
+
+    // Replace current style sheet w/ loaded file
+    setNavigationStyleSheet(styleSheetText);
 }
 
 void MainWindow::setShowQuickButtons(bool show)

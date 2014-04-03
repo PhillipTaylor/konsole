@@ -326,6 +326,11 @@ void Session::addView(TerminalDisplay* widget)
 
     widget->setUsesMouse(_emulation->programUsesMouse());
 
+    connect(_emulation, SIGNAL(programBracketedPasteModeChanged(bool)),
+            widget, SLOT(setBracketedPasteMode(bool)));
+
+    widget->setBracketedPasteMode(_emulation->programBracketedPasteMode());
+
     widget->setScreenWindow(_emulation->createWindow());
 
     //connect view signals and slots
@@ -441,7 +446,12 @@ void Session::run()
     const int CHOICE_COUNT = 3;
     // if '_program' is empty , fall back to default shell. If that is not set
     // then fall back to /bin/sh
+#ifndef _WIN32
     QString programs[CHOICE_COUNT] = {_program, qgetenv("SHELL"), "/bin/sh"};
+#else
+    // on windows, fall back to %COMSPEC% or to cmd.exe
+    QString programs[CHOICE_COUNT] = {_program, qgetenv("COMSPEC"), "cmd.exe"};
+#endif
     QString exec;
     int choice = 0;
     while (choice < CHOICE_COUNT) {
@@ -496,6 +506,7 @@ void Session::run()
     int result = _shellProcess->start(exec, arguments, _environment);
     if (result < 0) {
         terminalWarning(i18n("Could not start program '%1' with arguments '%2'.", exec, arguments.join(" ")));
+        terminalWarning(_shellProcess->errorString());
         return;
     }
 

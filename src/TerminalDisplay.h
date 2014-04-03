@@ -294,7 +294,6 @@ public:
     }
 
     void setSize(int columns, int lines);
-    void setFixedSize(int columns, int lines);
 
     // reimplemented
     QSize sizeHint() const;
@@ -450,6 +449,9 @@ public:
     /** Returns the terminal screen section which is displayed in this widget.  See setScreenWindow() */
     ScreenWindow* screenWindow() const;
 
+    // Select the current line.
+    void selectCurrentLine();
+
     void printContent(QPainter& painter, bool friendly);
 
 public slots:
@@ -533,6 +535,9 @@ public slots:
 
     /** See setUsesMouse() */
     bool usesMouse() const;
+
+    void setBracketedPasteMode(bool bracketedPasteMode);
+    bool bracketedPasteMode() const;
 
     /**
      * Shows a notification that a bell event has occurred in the terminal.
@@ -655,6 +660,7 @@ protected:
     void clearImage();
 
     void mouseTripleClickEvent(QMouseEvent* event);
+    void selectLine(QPoint pos, bool entireLine);
 
     // reimplemented
     virtual void inputMethodEvent(QInputMethodEvent* event);
@@ -679,6 +685,8 @@ private slots:
     void dropMenuPasteActionTriggered();
 
     void dropMenuCdActionTriggered();
+
+    void dismissOutputSuspendedMessage();
 
 private:
     // -- Drawing helpers --
@@ -765,6 +773,8 @@ private:
 
     QPoint findLineStart(const QPoint &pnt);
     QPoint findLineEnd(const QPoint &pnt);
+    QPoint findWordStart(const QPoint &pnt);
+    QPoint findWordEnd(const QPoint &pnt);
 
     // the window onto the terminal screen which this display
     // is currently showing.
@@ -808,6 +818,7 @@ private:
     bool _showTerminalSizeHint;
     bool _bidiEnabled;
     bool _mouseMarks;
+    bool _bracketedPasteMode;
 
     QPoint  _iPntSel; // initial selection point
     QPoint  _pntSel; // current selection point
@@ -837,7 +848,6 @@ private:
 
     bool _underlineLinks;     // Underline URL and hosts on mouse hover
     bool _openLinksByDirectClick;     // Open URL and hosts by single mouse click
-    bool _isFixedSize; // columns/lines are locked.
 
     bool _ctrlRequiredForDrag; // require Ctrl key for drag selected text
 
@@ -896,6 +906,8 @@ private:
 
     int _margin;      // the contents margin
     bool _centerContents;   // center the contents between margins
+
+    qreal _opacity;
 
     friend class TerminalDisplayAccessible;
 };
