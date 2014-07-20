@@ -2901,6 +2901,7 @@ void TerminalDisplay::outputSuspended(bool suspended)
         _outputSuspendedLabel->setBackgroundRole(QPalette::Base);
         _outputSuspendedLabel->setFont(KGlobalSettings::smallestReadableFont());
         _outputSuspendedLabel->setContentsMargins(5, 5, 5, 5);
+        _outputSuspendedLabel->setWordWrap(true);
 
         //enable activation of "Xon/Xoff" link in label
         _outputSuspendedLabel->setTextInteractionFlags(Qt::LinksAccessibleByMouse |
@@ -2912,7 +2913,6 @@ void TerminalDisplay::outputSuspended(bool suspended)
         _gridLayout->addItem(new QSpacerItem(0, 0, QSizePolicy::Expanding,
                                              QSizePolicy::Expanding),
                              1, 0);
-
     }
     // Remove message after a few seconds
     if (suspended) {
