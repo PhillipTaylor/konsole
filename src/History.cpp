@@ -34,6 +34,8 @@
 #include <KDebug>
 #include <KStandardDirs>
 
+#include <QDir>
+
 // Reasonable line size
 static const int LINE_SIZE = 1024;
 
@@ -61,8 +63,7 @@ HistoryFile::HistoryFile()
       _fileMap(0),
       _readWriteBalance(0)
 {
-    const QString tmpFormat = KStandardDirs::locateLocal("tmp", QString())
-                              + "konsole-XXXXXX.history";
+    const QString tmpFormat = QDir::tempPath() + QLatin1Char('/') + "konsole-XXXXXX.history";
     _tmpFile.setFileTemplate(tmpFormat);
     if (_tmpFile.open()) {
         _tmpFile.setAutoRemove(true);
@@ -373,7 +374,10 @@ void* CompactHistoryLine::operator new(size_t size, CompactHistoryBlockList& blo
 
 CompactHistoryLine::CompactHistoryLine(const TextLine& line, CompactHistoryBlockList& bList)
     : _blockListRef(bList),
-      _formatLength(0)
+      _formatArray(0),
+      _text(0),
+      _formatLength(0),
+      _wrapped(false)
 {
     _length = line.size();
 

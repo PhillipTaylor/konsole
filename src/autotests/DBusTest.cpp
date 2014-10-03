@@ -78,31 +78,22 @@ void DBusTest::initTestCase()
     }
     //kDebug()<< "Using service: " + _interfaceName.toLatin1();
 
-    _iface = new QDBusInterface(_interfaceName,
-                                QLatin1String("/Konsole"),
-                                QLatin1String("org.kde.konsole.Konsole"),
-                                QDBusConnection::sessionBus(), this);
-    QVERIFY(_iface);
-    QVERIFY(_iface->isValid());
+    QDBusInterface iface(_interfaceName,
+                         QLatin1String("/Konsole"),
+                         QLatin1String("org.kde.konsole.Konsole"));
+    QVERIFY(iface.isValid());
 }
 
 /* Close the Konsole window that was opened to test the DBus interface
  */
 void DBusTest::cleanupTestCase()
 {
-    QVERIFY(_iface);
-    QVERIFY(_iface->isValid());
-
     // Need to take care of when user has CloseAllTabs=False otherwise
     // they will get a popup dialog when we try to close this.
 
     QDBusInterface iface(_interfaceName,
                          QLatin1String("/konsole/MainWindow_1"),
-#if QT_VERSION < 0x040800
-                         QLatin1String("com.trolltech.Qt.QWidget"));
-#else
                          QLatin1String("org.qtproject.Qt.QWidget"));
-#endif
     if (!iface.isValid())
         kFatal() << "Unable to get a dbus interface to Konsole!";
 
@@ -118,9 +109,6 @@ void DBusTest::testSessions()
     QDBusReply<QByteArray> arrayReply;
     QDBusReply<QString> stringReply;
     QDBusReply<QStringList> listReply;
-
-    QVERIFY(_iface);
-    QVERIFY(_iface->isValid());
 
     QDBusInterface iface(_interfaceName,
                          QLatin1String("/Sessions/1"),
@@ -243,6 +231,4 @@ void DBusTest::testSessions()
 }
 
 QTEST_MAIN(DBusTest)
-
-#include "DBusTest.moc"
 

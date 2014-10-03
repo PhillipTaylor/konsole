@@ -64,19 +64,19 @@ void Pty::init()
     setUseUtmp(true);
     setPtyChannels(KPtyProcess::AllChannels);
 
-    connect(pty(), SIGNAL(readyRead()) , this , SLOT(dataReceived()));
+    connect(pty(), &KPtyDevice::readyRead , this , &Konsole::Pty::dataReceived);
 }
 
 Pty::~Pty()
 {
 }
 
-void Pty::sendData(const char* data, int length)
+void Pty::sendData(const QByteArray& data)
 {
-    if (length == 0)
+    if (data.isEmpty())
         return;
 
-    if (!pty()->write(data, length)) {
+    if (!pty()->write(data.constData(), data.length())) {
         kWarning() << "Could not send input data to terminal process.";
         return;
     }
@@ -261,11 +261,17 @@ int Pty::start(const QString& programName,
 void Pty::setWriteable(bool writeable)
 {
     KDE_struct_stat sbuf;
-    KDE::stat(pty()->ttyName(), &sbuf);
-    if (writeable)
-        KDE::chmod(pty()->ttyName(), sbuf.st_mode | S_IWGRP);
-    else
-        KDE::chmod(pty()->ttyName(), sbuf.st_mode & ~(S_IWGRP | S_IWOTH));
+    if (KDE::stat(pty()->ttyName(), &sbuf) == 0) {
+        if (writeable) {
+            if (KDE::chmod(pty()->ttyName(), sbuf.st_mode | S_IWGRP) < 0) {
+                kWarning() << "Could not set writeable on "<<pty()->ttyName();
+            }
+        } else {
+            if (KDE::chmod(pty()->ttyName(), sbuf.st_mode & ~(S_IWGRP | S_IWOTH)) < 0) {
+                kWarning() << "Could not unset writeable on "<<pty()->ttyName();
+            }
+        }
+    }
 }
 
 void Pty::closePty()
@@ -300,4 +306,3 @@ void Pty::setupChildProcess()
         sigaction(signal, &action, 0);
 }
 
-#include "Pty.moc"
