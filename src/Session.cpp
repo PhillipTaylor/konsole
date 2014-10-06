@@ -1005,7 +1005,7 @@ QString Session::getDynamicTitle()
     return title;
 }
 
-KUrl Session::getUrl()
+QUrl Session::getUrl()
 {
     QString path;
 
@@ -1038,7 +1038,7 @@ KUrl Session::getUrl()
         }
     }
 
-    return KUrl(path);
+    return QUrl(path);
 }
 
 void Session::setIconName(const QString& iconName)
