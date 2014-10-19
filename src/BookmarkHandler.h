@@ -27,10 +27,13 @@
 // KDE
 #include <KBookmarkManager>
 
+#include <QtCore/QUrl>
+
 // Konsole
 #include "konsole_export.h"
 
 class KMenu;
+class QMenu;
 class KBookmarkMenu;
 class KActionCollection;
 
@@ -62,20 +65,21 @@ public:
      * @param toplevel TODO: Document me
      * @param parent The parent object
      */
-    BookmarkHandler(KActionCollection* collection , KMenu* menu, bool toplevel , QObject* parent);
+    BookmarkHandler(KActionCollection* collection , QMenu* menu, bool toplevel , QObject* parent);
     ~BookmarkHandler();
 
-    virtual QString currentUrl() const;
+    virtual QUrl currentUrl() const;
     virtual QString currentTitle() const;
+    virtual QString currentIcon() const;
     virtual bool enableOption(BookmarkOption option) const;
     virtual bool supportsTabs() const;
-    virtual QList<QPair<QString, QString> > currentBookmarkList() const;
+    virtual QList<KBookmarkOwner::FutureBookmark> currentBookmarkList() const;
     virtual void openFolderinTabs(const KBookmarkGroup& group);
 
     /**
      * Returns the menu which this bookmark handler inserts its actions into.
      */
-    KMenu* menu() const {
+    QMenu* menu() const {
         return _menu;
     }
 
@@ -96,7 +100,7 @@ signals:
      *
      * @param url The url of the bookmark which was selected by the user.
      */
-    void openUrl(const KUrl& url);
+    void openUrl(const QUrl& url);
 
     /**
      * Emitted when the user selects 'Open Folder in Tabs'
@@ -105,16 +109,17 @@ signals:
      * @param urls The urls of the bookmarks in the folder whose
      * 'Open Folder in Tabs' action was triggered
      */
-    void openUrls(const QList<KUrl>& urls);
+    void openUrls(const QList<QUrl>& urls);
 
 private slots:
     void openBookmark(const KBookmark& bm, Qt::MouseButtons, Qt::KeyboardModifiers);
 
 private:
     QString titleForView(ViewProperties* view) const;
-    QString urlForView(ViewProperties* view) const;
+    QUrl urlForView(ViewProperties* view) const;
+    QString iconForView(ViewProperties* view) const;
 
-    KMenu* _menu;
+    QMenu* _menu;
     KBookmarkMenu* _bookmarkMenu;
     QString _file;
     bool _toplevel;

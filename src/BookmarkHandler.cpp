@@ -30,7 +30,9 @@
 // KDE
 #include <KShell>
 #include <KBookmarkMenu>
+#include <KBookmarkOwner>
 #include <KStandardDirs>
+#include <KLocalizedString>
 
 // Konsole
 #include "ViewProperties.h"
@@ -38,7 +40,7 @@
 using namespace Konsole;
 
 BookmarkHandler::BookmarkHandler(KActionCollection* collection,
-                                 KMenu* menu,
+                                 QMenu* menu,
                                  bool toplevel,
                                  QObject* parent)
     : QObject(parent),
@@ -84,17 +86,17 @@ bool BookmarkHandler::enableOption(BookmarkOption option) const
         return KBookmarkOwner::enableOption(option);
 }
 
-QString BookmarkHandler::currentUrl() const
+QUrl BookmarkHandler::currentUrl() const
 {
     return urlForView(_activeView);
 }
 
-QString BookmarkHandler::urlForView(ViewProperties* view) const
+QUrl BookmarkHandler::urlForView(ViewProperties* view) const
 {
     if (view)
-        return view->url().prettyUrl();
+        return QUrl(view->url());
     else
-        return QString();
+        return QUrl();
 }
 
 QString BookmarkHandler::currentTitle() const
@@ -104,7 +106,7 @@ QString BookmarkHandler::currentTitle() const
 
 QString BookmarkHandler::titleForView(ViewProperties* view) const
 {
-    const KUrl& url = view ? view->url() : KUrl();
+    const QUrl& url = view ? view->url() : QUrl();
     if (url.isLocalFile()) {
         QString path = url.path();
 
@@ -112,14 +114,27 @@ QString BookmarkHandler::titleForView(ViewProperties* view) const
         path = QFileInfo(path).baseName();
 
         return path;
-    } else if (url.hasHost()) {
-        if (url.hasUser())
-            return i18nc("@item:inmenu The user's name and host they are connected to via ssh", "%1 on %2", url.user(), url.host());
+    } else if (!url.host().isEmpty()) {
+        if (!url.userName().isEmpty())
+            return i18nc("@item:inmenu The user's name and host they are connected to via ssh", "%1 on %2", url.userName(), url.host());
         else
             return i18nc("@item:inmenu The host the user is connected to via ssh", "%1", url.host());
     }
 
-    return url.prettyUrl();
+    return url.toDisplayString();
+}
+
+QString BookmarkHandler::currentIcon() const
+{
+    return iconForView(_activeView);
+}
+
+QString BookmarkHandler::iconForView(ViewProperties* view) const
+{
+    if (view)
+        return view->icon().name();
+    else
+        return QString();
 }
 
 bool BookmarkHandler::supportsTabs() const
@@ -127,12 +142,12 @@ bool BookmarkHandler::supportsTabs() const
     return true;
 }
 
-QList<QPair<QString, QString> > BookmarkHandler::currentBookmarkList() const
+QList<KBookmarkOwner::FutureBookmark> BookmarkHandler::currentBookmarkList() const
 {
-    QList<QPair<QString, QString> > list;
+    QList<KBookmarkOwner::FutureBookmark> list;
 
     foreach(ViewProperties* view, _views) {
-        list << QPair<QString, QString>(titleForView(view) , urlForView(view));
+        list << KBookmarkOwner::FutureBookmark(titleForView(view) , urlForView(view), iconForView(view));
     }
 
     return list;
@@ -155,4 +170,3 @@ ViewProperties* BookmarkHandler::activeView() const
     return _activeView;
 }
 
-#include "BookmarkHandler.moc"

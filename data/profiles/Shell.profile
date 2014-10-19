@@ -57,7 +57,6 @@ Name[nb]=Skall
 Name[nds]=Befehlsfinster
 Name[nl]=Shell
 Name[nn]=Skal
-Name[oc]=Copèla
 Name[or]=Shell
 Name[pa]=ਸ਼ੈੱਲ
 Name[pl]=Powłoka

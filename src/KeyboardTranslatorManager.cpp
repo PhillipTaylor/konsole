@@ -28,6 +28,7 @@
 
 // KDE
 #include <KDebug>
+#include <KGlobal>
 #include <KStandardDirs>
 
 using namespace Konsole;
@@ -45,7 +46,7 @@ KeyboardTranslatorManager::~KeyboardTranslatorManager()
     delete _fallbackTranslator;
 }
 
-K_GLOBAL_STATIC(KeyboardTranslatorManager , theKeyboardTranslatorManager)
+Q_GLOBAL_STATIC(KeyboardTranslatorManager, theKeyboardTranslatorManager)
 KeyboardTranslatorManager* KeyboardTranslatorManager::instance()
 {
     return theKeyboardTranslatorManager;

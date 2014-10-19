@@ -39,9 +39,9 @@ ViewProperties* ViewProperties::propertiesById(int id)
 {
     return _viewProperties[id];
 }
-KUrl ViewProperties::url() const
+QUrl ViewProperties::url() const
 {
-    return KUrl();
+    return QUrl();
 }
 QString ViewProperties::currentDir() const
 {
@@ -94,4 +94,4 @@ int ViewProperties::identifier() const
 {
     return _id;
 }
-#include "ViewProperties.moc"
+
